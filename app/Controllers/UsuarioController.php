@@ -54,6 +54,11 @@ class UsuarioController extends BaseController
             return $this->response->setJSON([
                 'status' => true,
                 'message' => 'Correcto el ingreso',
+                "data" => [
+                "idusuario" => $usuario["idusuario"],
+                "descripcion" => $usuario["descripcion"],
+                "idperfil" => $usuario["idperfil"], // 1 = admin, 2 = usuario 
+            ]
             ]);
         }
 
