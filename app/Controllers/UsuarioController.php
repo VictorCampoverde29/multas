@@ -17,6 +17,39 @@ class UsuarioController extends BaseController
     }
 
 
+    // Hashear una sola contraseña 
+    public function HasheoContra()
+    {
+        // Intentar leer JSON primero de forma segura
+        try {
+            $json = $this->request->getJSON(true) ?: [];
+        } catch (\Throwable $e) {
+            $json = [];
+        }
+
+        $post = $this->request->getPost() ?: [];
+        $json = is_array($json) ? $json : [];
+        $post = is_array($post) ? $post : [];
+
+        // Merge: JSON tiene preferencia
+        $input = array_merge($post, $json);
+
+        $clave = $input['password'] ?? null;
+
+        if (!$clave) {
+            return $this->response->setJSON([
+                'status' => 'error',
+                'message' => 'password es requerido'
+            ])->setStatusCode(400);
+        }
+
+        $hashedPassword = password_hash($clave, PASSWORD_DEFAULT);
+
+        return $this->response->setJSON([
+            'status' => 'success',
+            'password_hash' => $hashedPassword
+        ]);
+    }
 
     public function verificarContrasena()
     {
@@ -77,7 +110,7 @@ class UsuarioController extends BaseController
     {
         $usuarioModel = new UsuarioModel();
         $data = $usuarioModel->getUsuario();
-        return $this->response->setJSON($data);
+        return $this->response->setJSON(['data' => $data]);
     }
 
     // Obtener datos de un usuario por su ID
@@ -261,90 +294,57 @@ class UsuarioController extends BaseController
     }
 
     
-    // Atención: endpoint sensible — está protegido por el filtro de token del grupo `usuario`.
-    public function hashPasswords()
-    {
-        $usuarioModel = new UsuarioModel();
+    // // Atención: endpoint sensible — está protegido por el filtro de token del grupo `usuario`.
+    // public function hashPasswords()
+    // {
+    //     $usuarioModel = new UsuarioModel();
 
-        $users = $usuarioModel->findAll();
-        $updated = 0;
-        $skipped = 0;
-        $errors = [];
+    //     $users = $usuarioModel->findAll();
+    //     $updated = 0;
+    //     $skipped = 0;
+    //     $errors = [];
 
-        foreach ($users as $user) {
-            $id = $user['idusuario'] ?? null;
-            $pwd = $user['password'] ?? '';
+    //     foreach ($users as $user) {
+    //         $id = $user['idusuario'] ?? null;
+    //         $pwd = $user['password'] ?? '';
 
-            if (!$id) {
-                continue;
-            }
+    //         if (!$id) {
+    //             continue;
+    //         }
 
-            // Detectar si ya está hasheada: si password_get_info indica algoritmo != 0
-            $info = password_get_info($pwd);
-            if ($info['algo'] !== 0) {
-                $skipped++;
-                continue; // ya está hasheada
-            }
+    //         // Detectar si ya está hasheada: si password_get_info indica algoritmo != 0
+    //         $info = password_get_info($pwd);
+    //         if ($info['algo'] !== 0) {
+    //             $skipped++;
+    //             continue; // ya está hasheada
+    //         }
 
-            // Si la contraseña está vacía o nula, saltar
-            if ($pwd === '' || $pwd === null) {
-                $skipped++;
-                continue;
-            }
+    //         // Si la contraseña está vacía o nula, saltar
+    //         if ($pwd === '' || $pwd === null) {
+    //             $skipped++;
+    //             continue;
+    //         }
 
-            // Re-hashear y actualizar
-            $newHash = password_hash($pwd, PASSWORD_DEFAULT);
-            try {
-                $res = $usuarioModel->update($id, ['password' => $newHash]);
-                if ($res) {
-                    $updated++;
-                } else {
-                    $errors[] = $id;
-                }
-            } catch (\Throwable $e) {
-                $errors[] = ['id' => $id, 'error' => $e->getMessage()];
-            }
-        }
+    //         // Re-hashear y actualizar
+    //         $newHash = password_hash($pwd, PASSWORD_DEFAULT);
+    //         try {
+    //             $res = $usuarioModel->update($id, ['password' => $newHash]);
+    //             if ($res) {
+    //                 $updated++;
+    //             } else {
+    //                 $errors[] = $id;
+    //             }
+    //         } catch (\Throwable $e) {
+    //             $errors[] = ['id' => $id, 'error' => $e->getMessage()];
+    //         }
+    //     }
 
-        return $this->response->setJSON([
-            'updated' => $updated,
-            'skipped' => $skipped,
-            'errors' => $errors
-        ]);
-    }
+    //     return $this->response->setJSON([
+    //         'updated' => $updated,
+    //         'skipped' => $skipped,
+    //         'errors' => $errors
+    //     ]);
+    // }
 
-    // Hashear una sola contraseña enviada por POST o JSON y devolver el hash
-    public function HasheoContra()
-    {
-        // Intentar leer JSON primero de forma segura
-        try {
-            $json = $this->request->getJSON(true) ?: [];
-        } catch (\Throwable $e) {
-            $json = [];
-        }
-
-        $post = $this->request->getPost() ?: [];
-        $json = is_array($json) ? $json : [];
-        $post = is_array($post) ? $post : [];
-
-        // Merge: JSON tiene preferencia
-        $input = array_merge($post, $json);
-
-        $clave = $input['password'] ?? null;
-
-        if (!$clave) {
-            return $this->response->setJSON([
-                'status' => 'error',
-                'message' => 'password es requerido'
-            ])->setStatusCode(400);
-        }
-
-        $hashedPassword = password_hash($clave, PASSWORD_DEFAULT);
-
-        return $this->response->setJSON([
-            'status' => 'success',
-            'password_hash' => $hashedPassword
-        ]);
-    }
 
 }
