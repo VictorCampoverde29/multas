@@ -21,10 +21,16 @@ class RegMultasModel extends Model
         'estado'
     ];
 
-    //Obtiene todos los usuarios
+    //Obtiene todos los registros de multas con información de usuario y multa
     public function getRegMultas()
     {
-        return $this->findAll(); //trae todos los datos del usuario
+        return $this->select('registro_multa.idregistro, registro_multa.idusuario, 
+                              registro_multa.idmulta, registro_multa.fecha, registro_multa.observaciones, 
+                              registro_multa.estado, usuario.descripcion as usuario_descripcion, 
+                              multas.concepto as multa_concepto, multas.monto')
+            ->join('usuario', 'usuario.idusuario = registro_multa.idusuario')
+            ->join('multas', 'multas.idmulta = registro_multa.idmulta')
+            ->findAll();
     }
 
     // Obtener multa por id

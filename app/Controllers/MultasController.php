@@ -14,7 +14,7 @@ class MultasController extends BaseController
     {
         $multasModel = new MultasModel();
         $data = $multasModel->getMultas();
-        return $this->response->setJSON($data);
+        return $this->response->setJSON(['data' => $data]);
     }
 
     // AGREGAR MULTA

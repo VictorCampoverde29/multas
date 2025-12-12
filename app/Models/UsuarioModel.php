@@ -18,25 +18,11 @@ class UsuarioModel extends Model
         'descripcion',
         'password',
         'email',
+        'f_registro',
         'estado'
     ];
 
-    // //Obtiene todos los usuarios
-    // public function getUsuario()
-    // {
-    //     return $this->select('idusuario,idperfil, descripcion, email, estado')
-    //         ->findAll(); //trae todos los datos del usuario
-    // }
-
-    //Obtiene todos los usuarios con la descripción del perfil
-    public function getUsuario()
-    {
-        return $this->select('usuario.idusuario, usuario.idperfil, usuario.descripcion, usuario.email, usuario.estado, perfil.descripcion as perfil_descripcion')
-            ->join('perfil', 'perfil.idperfil = usuario.idperfil')
-            ->findAll();
-    }
-
-    ///////////////////
+        ///////////////////
     //Obtiene usuarios activos para login
     public function getUsuarioLogin()
     {
@@ -73,11 +59,17 @@ class UsuarioModel extends Model
     ///////////////////
 
 
+    //DATOS DEL USUARIO (excluye administrador con ID 1)
+    public function getUsuario()
+    {
+        return $this->select('usuario.idusuario, usuario.idperfil, usuario.descripcion, usuario.email,
+         usuario.f_registro, usuario.estado, perfil.descripcion as perfil_descripcion')
+            ->join('perfil', 'perfil.idperfil = usuario.idperfil')
+            ->where('usuario.idusuario !=', 1)
+            ->findAll();
+    }
 
-
-
-
-    //FUNCION PARA OBTENER LOS DATOS POR ID PARA EDITAR
+    //OBTENER LOS DATOS POR ID PARA EDITAR
     public function getUsuarioById($idusuario)
     {
         return $this->where('idusuario', $idusuario)
@@ -85,7 +77,7 @@ class UsuarioModel extends Model
     }
 
 
-    // FUNCION PARA ACTUALIZAR LOS DATOS AL HABER EDITADO
+    //ACTUALIZAR LOS DATOS AL HABER EDITADO
     public function updateUsuario($id, $data)
     {
         return $this->update($id, $data);

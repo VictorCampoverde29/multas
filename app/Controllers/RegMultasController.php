@@ -13,7 +13,7 @@ class RegMultasController extends BaseController
     {
         $regMultasModel = new RegMultasModel();
         $data = $regMultasModel->getRegMultas();
-        return $this->response->setJSON($data);
+        return $this->response->setJSON(['data' => $data]);
     }
 
 
@@ -34,23 +34,23 @@ class RegMultasController extends BaseController
         // Campos requeridos
         $idusuario = isset($input['idusuario']) ? trim($input['idusuario']) : null;
         $idmulta = isset($input['idmulta']) ? trim($input['idmulta']) : null;
-        $fecha = isset($input['fecha']) ? trim($input['fecha']) : null;
         $observaciones = isset($input['observaciones']) ? trim($input['observaciones']) : null;
-        $estado = isset($input['estado']) ? trim($input['estado']) : null;
 
-        if (!$idusuario || !$idmulta || !$fecha || !$observaciones || !$estado) {
+        // Validar solo los campos requeridos
+        if (!$idusuario || !$idmulta || !$observaciones) {
             return $this->response->setJSON([
                 'status' => 'error',
-                'message' => 'fecha, observaciones y estado son requeridos'
+                'message' => 'idusuario, idmulta y observaciones son requeridos'
             ])->setStatusCode(400);
         }
 
+        // Asignar automáticamente fecha actual y estado ACTIVO
         $data = [
             'idusuario' => $idusuario,
             'idmulta' => $idmulta,
-            'fecha' => $fecha,
-            'observaciones'    => $observaciones,
-            'estado'   => $estado,
+            'fecha' => date('Y-m-d H:i:s'), // Fecha y hora actual
+            'observaciones' => $observaciones,
+            'estado' => 'ACTIVO', // Estado por defecto
         ];
 
         $insertId = $regMultasModel->insert($data);
