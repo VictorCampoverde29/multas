@@ -23,7 +23,6 @@ class UsuarioController extends BaseController
         $json = is_array($json) ? $json : [];
         $post = is_array($post) ? $post : [];
 
-        // Merge: JSON tiene preferencia
         $input = array_merge($post, $json);
 
         $clave = $input['password'] ?? null;
@@ -43,6 +42,7 @@ class UsuarioController extends BaseController
         ]);
     }
 
+
     // Obtener lista de usuarios para login
     public function getUsuarios()
     {
@@ -50,6 +50,7 @@ class UsuarioController extends BaseController
         $data = $usuarioModel->getUsuarioLogin();
         return $this->response->setJSON($data);
     }
+
     
     // Verificar usuario y contraseña
     public function verificarContrasena()
@@ -89,10 +90,10 @@ class UsuarioController extends BaseController
                 'status' => true,
                 'message' => 'Correcto el ingreso',
                 "data" => [
-                "idusuario" => $usuario["idusuario"],
-                "descripcion" => $usuario["descripcion"],
-                "idperfil" => $usuario["idperfil"], // 1 = admin, 2 = usuario 
-            ]
+                    "idusuario" => $usuario["idusuario"],
+                    "descripcion" => $usuario["descripcion"],
+                    "idperfil" => $usuario["idperfil"], // 1 = admin, 2 = usuario 
+                ]
             ]);
         }
 
@@ -137,15 +138,25 @@ class UsuarioController extends BaseController
         $post = is_array($post) ? $post : [];
         $input = array_merge($post, $json);
 
-        $id = $input['idusuario'] ?? null;
+        // Instanciar modelo para posibles resoluciones alternativas del ID
+        $usuarioModel = new UsuarioModel();
+
+        // Resolver idusuario desde varias fuentes: body, query (?idusuario=) o por descripcion
+        $id = $input['idusuario'] ?? ($this->request->getGet('idusuario') ?? null);
+        if (!$id && isset($input['descripcion'])) {
+            // Si no vino idusuario pero vino descripcion, intentar resolver el ID
+            $byDesc = $usuarioModel->where('descripcion', trim($input['descripcion']))->first();
+            if ($byDesc && isset($byDesc['idusuario'])) {
+                $id = $byDesc['idusuario'];
+            }
+        }
+
         if (!$id) {
             return $this->response->setJSON([
                 'status' => 'error',
-                'message' => 'idusuario es requerido'
+                'message' => 'idusuario es requerido (puedes enviarlo en el body, en la query ?idusuario=, o pasando descripcion)'
             ])->setStatusCode(400);
         }
-
-        $usuarioModel = new UsuarioModel();
         $existing = $usuarioModel->find($id);
         if (!$existing) {
             return $this->response->setJSON([
@@ -157,12 +168,13 @@ class UsuarioController extends BaseController
         // Campos a actualizar
         $descripcion = isset($input['descripcion']) ? trim($input['descripcion']) : null;
         $email = isset($input['email']) ? trim(strtolower($input['email'])) : null;
-        $password = $input['password'] ?? null;
+        $password = $input['password'] ?? null; // opcional
         $estado = $input['estado'] ?? null;
-        $idperfil = $input['idperfil'] ?? null;
+        $idperfilRaw = $input['idperfil'] ?? null; // llega como string "1"/"2" desde FlutterFlow
+        $idperfil = is_numeric($idperfilRaw) ? (int) $idperfilRaw : null;
 
-        // Validaciones
-        if ($descripcion) {
+        // Validaciones (solo si el valor cambió respecto al existente)
+        if ($descripcion && $descripcion !== ($existing['descripcion'] ?? null)) {
             $other = $usuarioModel->where('descripcion', $descripcion)->where('idusuario !=', $id)->first();
             if ($other) {
                 return $this->response->setJSON([
@@ -172,7 +184,7 @@ class UsuarioController extends BaseController
             }
         }
 
-        if ($email) {
+        if ($email && $email !== ($existing['email'] ?? null)) {
             $other = $usuarioModel->where('email', $email)->where('idusuario !=', $id)->first();
             if ($other) {
                 return $this->response->setJSON([
@@ -260,19 +272,23 @@ class UsuarioController extends BaseController
             ])->setStatusCode(409);
         }
 
-        // Hashear la contraseña antes de guardar
-        $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+        // Hashear la contraseña solo si viene proporcionada
+        $hashedPassword = ($password !== null && $password !== '') ? password_hash($password, PASSWORD_DEFAULT) : null;
 
         $data = [
             'descripcion' => $descripcion,
-            'password'    => $hashedPassword,
             'email'       => $email,
             'estado'      => $estado,
-            'f_registro'  => date('Y-m-d H:i:s'), 
+            'f_registro'  => date('Y-m-d H:i:s'),
         ];
 
+        if ($hashedPassword !== null) {
+            $data['password'] = $hashedPassword;
+        }
+
+        // Convertir idperfil (string) a entero si viene
         if ($idperfil !== null) {
-            $data['idperfil'] = $idperfil;
+            $data['idperfil'] = is_numeric($idperfil) ? (int) $idperfil : null;
         }
 
         $insertId = $usuarioModel->insert($data);
@@ -292,5 +308,4 @@ class UsuarioController extends BaseController
             'insertId' => $insertId
         ]);
     }
-
 }

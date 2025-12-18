@@ -66,3 +66,12 @@ $routes->group('regmultas', ['filter' => 'ApiTokenFilter'], function ($routes) {
     //ACTUALIZAR REGISTRO DE MULTAS
     $routes->post('updateRegMulta', 'RegMultasController::updateRegMulta');
     });
+
+
+//-------DASHBOARD   
+$routes->group('dashboard', ['filter' => 'ApiTokenFilter'], function ($routes) {
+    //OBTENER USUARIO TOTAL, MULTAS ANULADAS, MULTAS TOTALES
+    $routes->get('getStats', 'DashboardController::getStats');
+    //OBTENER ULTIMAS MULTAS
+    $routes->get('getUltimasMultas', 'DashboardController::getUltimasMultas');
+    });

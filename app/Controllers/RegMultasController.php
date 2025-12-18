@@ -37,10 +37,10 @@ class RegMultasController extends BaseController
         $observaciones = isset($input['observaciones']) ? trim($input['observaciones']) : null;
 
         // Validar solo los campos requeridos
-        if (!$idusuario || !$idmulta || !$observaciones) {
+        if (!$idusuario || !$idmulta) {
             return $this->response->setJSON([
                 'status' => 'error',
-                'message' => 'idusuario, idmulta y observaciones son requeridos'
+                'message' => 'idusuario y idmulta son requeridos'
             ])->setStatusCode(400);
         }
 

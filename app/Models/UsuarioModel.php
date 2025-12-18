@@ -22,7 +22,7 @@ class UsuarioModel extends Model
         'estado'
     ];
 
-        ///////////////////
+    ///////////////////
     //Obtiene usuarios activos para login
     public function getUsuarioLogin()
     {
@@ -59,11 +59,13 @@ class UsuarioModel extends Model
     ///////////////////
 
 
-    //DATOS DEL USUARIO (excluye administrador con ID 1)
+    //DATOS DEL USUARIO: trae todos los usuarios menos el admin, join con perfil y cantidad de multas.
     public function getUsuario()
     {
-        return $this->select('usuario.idusuario, usuario.idperfil, usuario.descripcion, usuario.email,
-         usuario.f_registro, usuario.estado, perfil.descripcion as perfil_descripcion')
+        return $this->select("usuario.idusuario, usuario.idperfil, usuario.descripcion, usuario.email,
+         usuario.f_registro, usuario.estado, perfil.descripcion as perfil_descripcion,
+         (SELECT COUNT(*) FROM registro_multa r WHERE r.idusuario = usuario.idusuario) AS cantidad_multas,
+         UPPER(CONCAT(SUBSTRING(usuario.descripcion, 1, 1), SUBSTRING(usuario.descripcion, 4, 1))) AS abreviatura")
             ->join('perfil', 'perfil.idperfil = usuario.idperfil')
             ->where('usuario.idusuario !=', 1)
             ->findAll();
@@ -72,7 +74,9 @@ class UsuarioModel extends Model
     //OBTENER LOS DATOS POR ID PARA EDITAR
     public function getUsuarioById($idusuario)
     {
-        return $this->where('idusuario', $idusuario)
+        return $this->select("usuario.*,
+         UPPER(CONCAT(SUBSTRING(usuario.descripcion, 1, 1), SUBSTRING(usuario.descripcion, 4, 1))) AS abreviatura")
+            ->where('idusuario', $idusuario)
             ->first();
     }
 
