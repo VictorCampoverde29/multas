@@ -74,4 +74,6 @@ $routes->group('dashboard', ['filter' => 'ApiTokenFilter'], function ($routes) {
     $routes->get('getStats', 'DashboardController::getStats');
     //OBTENER ULTIMAS MULTAS
     $routes->get('getUltimasMultas', 'DashboardController::getUltimasMultas');
+    //OBTENER DASHBOARD DEL USUARIO AUTENTICADO (idperfil = 2)
+    $routes->get('getUserDashboard', 'DashboardUsuController::getUserDashboard');
     });

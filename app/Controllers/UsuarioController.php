@@ -56,7 +56,7 @@ class UsuarioController extends BaseController
     public function verificarContrasena()
     {
         // Aceptar JSON o form-data de forma robusta
-        // Intentar leer JSON de forma segura; si falla (por ejemplo form-data), usar array vacío
+        
         try {
             $json = $this->request->getJSON(true) ?: [];
         } catch (\Throwable $e) {
@@ -68,17 +68,17 @@ class UsuarioController extends BaseController
         $json = is_array($json) ? $json : [];
         $post = is_array($post) ? $post : [];
 
-        // Mezclar: si viene en ambos, JSON tiene preferencia
+        
         $input = array_merge($post, $json);
 
-        // Usar 'descripcion' como identificador de usuario (si no viene, intentar idusuario)
+        // Identificador puede ser 'descripcion' o 'idusuario'
         $identificador = $input['descripcion'] ?? ($input['idusuario'] ?? null);
         $clave = $input['password'] ?? null;
 
-        if (!$identificador || !$clave) {
+        if ($identificador === null || $clave === null || $clave === '') {
             return $this->response->setJSON([
                 'status' => 'error',
-                'message' => 'Descripcion y contraseña son requeridos'
+                'message' => 'Debe enviar idusuario o descripcion, y password'
             ])->setStatusCode(400);
         }
 
@@ -86,13 +86,22 @@ class UsuarioController extends BaseController
         $usuario = $usuarioModel->getUser($identificador, $clave);
 
         if ($usuario) {
+            // Calcular abreviatura (primera y cuarta letra del nombre)
+            $desc = isset($usuario['descripcion']) ? strtoupper($usuario['descripcion']) : '';
+            $primera = $desc !== '' ? substr($desc, 0, 1) : '';
+            $cuarta = strlen($desc) >= 4 ? substr($desc, 3, 1) : (strlen($desc) >= 2 ? substr($desc, 1, 1) : '');
+            $abreviatura = $primera . $cuarta;
+
             return $this->response->setJSON([
                 'status' => true,
                 'message' => 'Correcto el ingreso',
-                "data" => [
-                    "idusuario" => $usuario["idusuario"],
-                    "descripcion" => $usuario["descripcion"],
-                    "idperfil" => $usuario["idperfil"], // 1 = admin, 2 = usuario 
+                'data' => [
+                    'idusuario'   => $usuario['idusuario'],
+                    'descripcion' => $usuario['descripcion'],
+                    'idperfil'    => $usuario['idperfil'],
+                    'email'       => $usuario['email'] ?? null,
+                    'estado'      => $usuario['estado'] ?? null,
+                    'abreviatura' => $abreviatura,
                 ]
             ]);
         }
@@ -107,7 +116,7 @@ class UsuarioController extends BaseController
 
 
     ///////////////// MANTENIMIENTOS DE USUARIO /////////////////
-    // Devuelve todos los usuarios (todos los campos) — para uso en Postman/FlutterFlow
+    // Devuelve todos los usuarios menos el admin
     public function getUsuario()
     {
         $usuarioModel = new UsuarioModel();

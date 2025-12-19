@@ -36,7 +36,7 @@ class UsuarioModel extends Model
     // $usuarioIdentificador puede ser id (numérico) o 'descripcion' (string)
     public function getUser($usuarioIdentificador, $clave)
     {
-        $builder = $this->select('idusuario, descripcion, idperfil, password')
+        $builder = $this->select('idusuario, descripcion, idperfil, password, email, estado')
             ->where('estado', 'ACTIVO');
 
         if (is_numeric($usuarioIdentificador)) {
